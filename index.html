@@ -265,11 +265,11 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
 
 <script>
 // ============ 配置区:把下面两个值改成你自己的 ============
-const SUPABASE_URL = 'https://lctbylxasnjruxflzoxq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjdGJ5bHhhc25qcnV4Zmx6b3hxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNjczMjcsImV4cCI6MjA5Mzg0MzMyN30.TbzUx093PRG2fQIvnjOHfdXXhGUHyVvmZy9Bp94HYlA';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 // =========================================================
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (id) => document.getElementById(id);
 
 function todayStr() {
@@ -285,7 +285,6 @@ function toast(msg, type) {
   setTimeout(function() { t.style.display = 'none'; }, 2200);
 }
 
-// 初始化:页面加载即进入,无需登录
 function init() {
   ['body-date', 'diet-date', 'workout-date'].forEach(function(id) { $(id).value = todayStr(); });
   refreshAll();
@@ -316,7 +315,6 @@ function getActivePeriod(target) {
   return btn ? btn.getAttribute('data-period') : 'day';
 }
 
-// ============ 身体 ============
 $('save-body').onclick = async function() {
   const date = $('body-date').value;
   const weight = parseFloat($('body-weight').value);
@@ -327,7 +325,7 @@ $('save-body').onclick = async function() {
     fat: parseFloat($('body-fat').value) || null,
     muscle: parseFloat($('body-muscle').value) || null
   };
-  const result = await supabase.from('body_data').upsert(record, { onConflict: 'date' });
+  const result = await sb.from('body_data').upsert(record, { onConflict: 'date' });
   if (result.error) return toast('保存失败: ' + result.error.message, 'error');
   toast('已保存', 'success');
   ['body-weight','body-fat','body-muscle'].forEach(function(id) { $(id).value = ''; });
@@ -335,7 +333,7 @@ $('save-body').onclick = async function() {
 };
 
 async function renderBodyList() {
-  const result = await supabase.from('body_data').select('*').order('date', { ascending: false }).limit(60);
+  const result = await sb.from('body_data').select('*').order('date', { ascending: false }).limit(60);
   const c = $('body-list');
   if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
   let h = '<div style="overflow-x:auto;"><table><thead><tr><th>日期</th><th class="num">体重</th><th class="num">脂肪</th><th class="num">肌肉</th><th class="num">体脂率</th><th></th></tr></thead><tbody>';
@@ -348,12 +346,11 @@ async function renderBodyList() {
   bindDelete(c);
 }
 
-// ============ 饮食 ============
 $('save-diet').onclick = async function() {
   const date = $('diet-date').value;
   const content = $('diet-content').value.trim();
   if (!date || !content) return toast('请填写日期和食物', 'error');
-  const result = await supabase.from('diet_data').insert({ date: date, meal: $('diet-meal').value, content: content });
+  const result = await sb.from('diet_data').insert({ date: date, meal: $('diet-meal').value, content: content });
   if (result.error) return toast('保存失败: ' + result.error.message, 'error');
   toast('已保存', 'success');
   $('diet-content').value = '';
@@ -361,7 +358,7 @@ $('save-diet').onclick = async function() {
 };
 
 async function renderDietList() {
-  const result = await supabase.from('diet_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
+  const result = await sb.from('diet_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
   const c = $('diet-list');
   if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
   const byDate = {};
@@ -380,11 +377,10 @@ async function renderDietList() {
   bindDelete(c);
 }
 
-// ============ 运动 ============
 $('save-workout').onclick = async function() {
   const date = $('workout-date').value;
   if (!date) return toast('请填写日期', 'error');
-  const result = await supabase.from('workout_data').insert({
+  const result = await sb.from('workout_data').insert({
     date: date,
     type: $('workout-type').value,
     duration: parseInt($('workout-duration').value) || null,
@@ -397,7 +393,7 @@ $('save-workout').onclick = async function() {
 };
 
 async function renderWorkoutList() {
-  const result = await supabase.from('workout_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
+  const result = await sb.from('workout_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
   const c = $('workout-list');
   if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
   const byDate = {};
@@ -420,7 +416,7 @@ function bindDelete(container) {
   container.querySelectorAll('.danger').forEach(function(b) {
     b.onclick = async function() {
       if (!confirm('确认删除?')) return;
-      const result = await supabase.from(b.getAttribute('data-table')).delete().eq('id', b.getAttribute('data-id'));
+      const result = await sb.from(b.getAttribute('data-table')).delete().eq('id', b.getAttribute('data-id'));
       if (result.error) return toast('删除失败', 'error');
       toast('已删除', 'success');
       refreshAll();
@@ -428,7 +424,6 @@ function bindDelete(container) {
   });
 }
 
-// ============ 时间工具 ============
 function getWeekKey(dateStr) {
   const d = new Date(dateStr);
   const day = d.getDay() || 7;
@@ -527,7 +522,7 @@ async function refreshAll() {
 }
 
 async function renderStats() {
-  const result = await supabase.from('body_data').select('*').order('date', { ascending: true });
+  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
   if (!result.data || result.data.length === 0) {
     $('stat-weight').textContent = '—';
     $('stat-fat').textContent = '—';
@@ -571,7 +566,7 @@ let workoutChartInstance = null;
 
 async function renderWeightChart() {
   const period = getActivePeriod('weight');
-  const result = await supabase.from('body_data').select('*').order('date', { ascending: true });
+  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
   const agg = aggregateBody(result.data || [], period);
   let labels = agg.labels;
   let values;
@@ -623,7 +618,7 @@ async function renderWeightChart() {
 
 async function renderRatioChart() {
   const period = getActivePeriod('ratio');
-  const result = await supabase.from('body_data').select('*').order('date', { ascending: true });
+  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
   const valid = (result.data || []).filter(function(r) { return r.fat != null && r.muscle != null && r.weight; });
   const agg = aggregateBody(valid, period);
   let labels = agg.labels;
@@ -674,7 +669,7 @@ async function renderRatioChart() {
 async function renderWorkoutChart() {
   const today = new Date();
   const year = today.getFullYear();
-  const result = await supabase.from('workout_data').select('date, type').gte('date', year + '-01-01').lte('date', year + '-12-31');
+  const result = await sb.from('workout_data').select('date, type').gte('date', year + '-01-01').lte('date', year + '-12-31');
 
   const uniq = new Set();
   (result.data || []).forEach(function(r) { uniq.add(r.date + '|' + r.type); });
