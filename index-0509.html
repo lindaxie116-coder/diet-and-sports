@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康追踪</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #FBF7F0;
+  color: #2C1810;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.app { max-width: 900px; margin: 0 auto; padding: 16px; }
+.header {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header h1 { font-size: 18px; font-weight: 500; color: #4A1B0C; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: #fff;
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.tab-btn {
+  border: none;
+  background: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #854F0B;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.tab-btn.active { background: #D85A30; color: #fff; }
+.card { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 16px; }
+.card h2 { font-size: 16px; font-weight: 500; margin-bottom: 16px; color: #4A1B0C; }
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.field { display: flex; flex-direction: column; }
+.field label { font-size: 12px; color: #888; margin-bottom: 4px; }
+input, select, textarea {
+  padding: 8px 12px;
+  border: 1px solid #e5dcc8;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  outline: none;
+  transition: border 0.2s;
+  width: 100%;
+  color: #2C1810;
+}
+input:focus, select:focus, textarea:focus { border-color: #D85A30; }
+textarea { min-height: 60px; resize: vertical; }
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #D85A30;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+button:hover { opacity: 0.85; }
+button.danger { background: #fff; color: #993C1D; border: 1px solid #F0997B; padding: 4px 10px; font-size: 12px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat { padding: 14px 16px; border-radius: 10px; }
+.stat-1, .stat-4 { background: #FAEEDA; }
+.stat-2 { background: #FAECE7; }
+.stat-3 { background: #FBEAF0; }
+.stat-label { font-size: 12px; margin-bottom: 4px; }
+.stat-1 .stat-label, .stat-4 .stat-label { color: #854F0B; }
+.stat-2 .stat-label { color: #993C1D; }
+.stat-3 .stat-label { color: #993556; }
+.stat-value { font-size: 22px; font-weight: 500; }
+.stat-1 .stat-value, .stat-4 .stat-value { color: #412402; }
+.stat-2 .stat-value { color: #4A1B0C; }
+.stat-3 .stat-value { color: #4B1528; }
+.stat-change { font-size: 11px; margin-top: 2px; }
+.stat-change.good { color: #1d9e75; }
+.stat-change.bad { color: #d44; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #f5ede0; }
+th { font-weight: 500; color: #854F0B; font-size: 12px; }
+.num { text-align: right; }
+.day-group { background: #FAEEDA; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
+.day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 500; color: #4A1B0C; }
+.day-summary { font-size: 12px; color: #854F0B; }
+.day-item { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #f0e0c0; font-size: 13px; align-items: center; }
+.day-item:nth-child(2) { border-top: none; padding-top: 4px; }
+.muted { color: #888; font-size: 12px; }
+.empty { text-align: center; color: #aaa; padding: 40px 20px; font-size: 13px; }
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px; border-radius: 10px;
+  font-size: 13px; z-index: 1000; display: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.toast.success { background: #D9F2E3; color: #0F6E56; }
+.toast.error { background: #FAECE7; color: #993C1D; }
+.toast.info { background: #FAEEDA; color: #854F0B; }
+.chart-card { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 16px; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.chart-title { font-size: 14px; font-weight: 500; color: #4A1B0C; }
+.chart-meta { font-size: 11px; color: #888; }
+.period-switch { display: inline-flex; gap: 2px; background: #FAEEDA; padding: 3px; border-radius: 8px; }
+.period-btn { padding: 4px 12px; border: none; background: none; cursor: pointer; font-size: 12px; border-radius: 5px; color: #854F0B; font-family: inherit; }
+.period-btn.active { background: #FAC775; color: #412402; font-weight: 500; }
+.chart-container { position: relative; width: 100%; height: 240px; }
+.chart-tall { height: 380px; }
+@media (max-width: 600px) {
+  .app { padding: 8px; }
+  .card, .chart-card { padding: 16px; }
+  .header { padding: 12px 16px; }
+  .stat-value { font-size: 18px; }
+  .chart-container { height: 200px; }
+  .chart-tall { height: 320px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app" class="app">
+  <div class="header">
+    <h1>健康追踪</h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="dashboard">概览</button>
+    <button class="tab-btn" data-tab="body">身体</button>
+    <button class="tab-btn" data-tab="diet">饮食</button>
+    <button class="tab-btn" data-tab="workout">运动</button>
+  </div>
+
+  <div id="tab-dashboard" class="tab-pane">
+    <div class="card">
+      <h2>当前数据</h2>
+      <div class="stats">
+        <div class="stat stat-1"><div class="stat-label">体重</div><div class="stat-value" id="stat-weight">—</div><div class="stat-change" id="stat-weight-change"></div></div>
+        <div class="stat stat-2"><div class="stat-label">脂肪</div><div class="stat-value" id="stat-fat">—</div><div class="stat-change" id="stat-fat-change"></div></div>
+        <div class="stat stat-3"><div class="stat-label">肌肉</div><div class="stat-value" id="stat-muscle">—</div><div class="stat-change" id="stat-muscle-change"></div></div>
+        <div class="stat stat-4"><div class="stat-label">体脂率</div><div class="stat-value" id="stat-bf">—</div><div class="stat-change" id="stat-bf-change"></div></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">体重趋势</div>
+          <div class="chart-meta" id="weight-meta"></div>
+        </div>
+        <div class="period-switch">
+          <button class="period-btn active" data-target="weight" data-period="day">日</button>
+          <button class="period-btn" data-target="weight" data-period="week">周</button>
+          <button class="period-btn" data-target="weight" data-period="month">月</button>
+          <button class="period-btn" data-target="weight" data-period="year">年</button>
+        </div>
+      </div>
+      <div class="chart-container"><canvas id="weight-chart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">增肌减脂趋势</div>
+          <div class="chart-meta" id="ratio-meta"></div>
+        </div>
+        <div class="period-switch">
+          <button class="period-btn active" data-target="ratio" data-period="day">日</button>
+          <button class="period-btn" data-target="ratio" data-period="week">周</button>
+          <button class="period-btn" data-target="ratio" data-period="month">月</button>
+          <button class="period-btn" data-target="ratio" data-period="year">年</button>
+        </div>
+      </div>
+      <div class="chart-container"><canvas id="ratio-chart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title" id="workout-title">训练汇总</div>
+          <div class="chart-meta">每月训练次数</div>
+        </div>
+      </div>
+      <div class="chart-container chart-tall"><canvas id="workout-chart"></canvas></div>
+    </div>
+  </div>
+
+  <div id="tab-body" class="tab-pane" style="display:none;">
+    <div class="card">
+      <h2>记录身体数据</h2>
+      <div class="form-grid">
+        <div class="field"><label>日期</label><input type="date" id="body-date"></div>
+        <div class="field"><label>体重 (kg)</label><input type="number" step="0.01" id="body-weight" placeholder="51.85"></div>
+        <div class="field"><label>脂肪 (kg)</label><input type="number" step="0.01" id="body-fat" placeholder="14.47"></div>
+        <div class="field"><label>肌肉 (kg)</label><input type="number" step="0.01" id="body-muscle" placeholder="19.30"></div>
+      </div>
+      <button id="save-body">保存</button>
+    </div>
+    <div class="card">
+      <h2>历史记录</h2>
+      <div id="body-list"></div>
+    </div>
+  </div>
+
+  <div id="tab-diet" class="tab-pane" style="display:none;">
+    <div class="card">
+      <h2>记录饮食</h2>
+      <div class="form-grid">
+        <div class="field"><label>日期</label><input type="date" id="diet-date"></div>
+        <div class="field"><label>餐次</label><select id="diet-meal"><option>早餐</option><option>午餐</option><option>晚餐</option><option>加餐</option></select></div>
+      </div>
+      <div class="field" style="margin-bottom:12px;"><label>食物内容</label><textarea id="diet-content" placeholder="鸡胸沙拉、糙米饭..."></textarea></div>
+      <button id="save-diet">保存</button>
+    </div>
+    <div class="card">
+      <h2>历史记录</h2>
+      <div id="diet-list"></div>
+    </div>
+  </div>
+
+  <div id="tab-workout" class="tab-pane" style="display:none;">
+    <div class="card">
+      <h2>记录运动</h2>
+      <div class="form-grid">
+        <div class="field"><label>日期</label><input type="date" id="workout-date"></div>
+        <div class="field"><label>形式</label><select id="workout-type"><option>有氧</option><option>无氧</option></select></div>
+        <div class="field"><label>时长 (分钟)</label><input type="number" id="workout-duration" placeholder="30"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px;"><label>内容</label><input type="text" id="workout-content" placeholder='跑步 5km / 哑铃深蹲 10kg 3×12'></div>
+      <button id="save-workout">保存</button>
+    </div>
+    <div class="card">
+      <h2>历史记录</h2>
+      <div id="workout-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+// ============ 配置区:把下面两个值改成你自己的 ============
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+// =========================================================
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id) => document.getElementById(id);
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function toast(msg, type) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || 'info');
+  t.style.display = 'block';
+  setTimeout(function() { t.style.display = 'none'; }, 2200);
+}
+
+// 初始化:页面加载即进入,无需登录
+function init() {
+  ['body-date', 'diet-date', 'workout-date'].forEach(function(id) { $(id).value = todayStr(); });
+  refreshAll();
+}
+
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.onclick = function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.style.display = 'none'; });
+    $('tab-' + btn.getAttribute('data-tab')).style.display = 'block';
+    refreshAll();
+  };
+});
+
+document.querySelectorAll('.period-btn').forEach(function(btn) {
+  btn.onclick = function() {
+    const target = btn.getAttribute('data-target');
+    document.querySelectorAll('.period-btn[data-target="' + target + '"]').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    if (target === 'weight') renderWeightChart();
+    if (target === 'ratio') renderRatioChart();
+  };
+});
+
+function getActivePeriod(target) {
+  const btn = document.querySelector('.period-btn[data-target="' + target + '"].active');
+  return btn ? btn.getAttribute('data-period') : 'day';
+}
+
+// ============ 身体 ============
+$('save-body').onclick = async function() {
+  const date = $('body-date').value;
+  const weight = parseFloat($('body-weight').value);
+  if (!date || !weight) return toast('请填写日期和体重', 'error');
+  const record = {
+    date: date,
+    weight: weight,
+    fat: parseFloat($('body-fat').value) || null,
+    muscle: parseFloat($('body-muscle').value) || null
+  };
+  const result = await supabase.from('body_data').upsert(record, { onConflict: 'date' });
+  if (result.error) return toast('保存失败: ' + result.error.message, 'error');
+  toast('已保存', 'success');
+  ['body-weight','body-fat','body-muscle'].forEach(function(id) { $(id).value = ''; });
+  refreshAll();
+};
+
+async function renderBodyList() {
+  const result = await supabase.from('body_data').select('*').order('date', { ascending: false }).limit(60);
+  const c = $('body-list');
+  if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
+  let h = '<div style="overflow-x:auto;"><table><thead><tr><th>日期</th><th class="num">体重</th><th class="num">脂肪</th><th class="num">肌肉</th><th class="num">体脂率</th><th></th></tr></thead><tbody>';
+  result.data.forEach(function(r) {
+    const bf = (r.fat && r.weight) ? ((r.fat / r.weight) * 100).toFixed(1) + '%' : '—';
+    h += '<tr><td>' + r.date + '</td><td class="num">' + r.weight.toFixed(2) + '</td><td class="num">' + (r.fat ? r.fat.toFixed(2) : '—') + '</td><td class="num">' + (r.muscle ? r.muscle.toFixed(2) : '—') + '</td><td class="num">' + bf + '</td><td class="num"><button class="danger" data-id="' + r.id + '" data-table="body_data">删除</button></td></tr>';
+  });
+  h += '</tbody></table></div>';
+  c.innerHTML = h;
+  bindDelete(c);
+}
+
+// ============ 饮食 ============
+$('save-diet').onclick = async function() {
+  const date = $('diet-date').value;
+  const content = $('diet-content').value.trim();
+  if (!date || !content) return toast('请填写日期和食物', 'error');
+  const result = await supabase.from('diet_data').insert({ date: date, meal: $('diet-meal').value, content: content });
+  if (result.error) return toast('保存失败: ' + result.error.message, 'error');
+  toast('已保存', 'success');
+  $('diet-content').value = '';
+  refreshAll();
+};
+
+async function renderDietList() {
+  const result = await supabase.from('diet_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
+  const c = $('diet-list');
+  if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
+  const byDate = {};
+  result.data.forEach(function(r) { (byDate[r.date] = byDate[r.date] || []).push(r); });
+  const dates = Object.keys(byDate).sort().reverse().slice(0, 14);
+  let h = '';
+  dates.forEach(function(d) {
+    const items = byDate[d];
+    h += '<div class="day-group"><div class="day-header"><span>' + d + '</span><span class="day-summary">' + items.length + ' 餐</span></div>';
+    items.forEach(function(r) {
+      h += '<div class="day-item"><div style="flex:1;min-width:0;"><span class="muted">' + r.meal + '</span> · ' + r.content + '</div><button class="danger" data-id="' + r.id + '" data-table="diet_data">×</button></div>';
+    });
+    h += '</div>';
+  });
+  c.innerHTML = h;
+  bindDelete(c);
+}
+
+// ============ 运动 ============
+$('save-workout').onclick = async function() {
+  const date = $('workout-date').value;
+  if (!date) return toast('请填写日期', 'error');
+  const result = await supabase.from('workout_data').insert({
+    date: date,
+    type: $('workout-type').value,
+    duration: parseInt($('workout-duration').value) || null,
+    content: $('workout-content').value.trim() || null
+  });
+  if (result.error) return toast('保存失败: ' + result.error.message, 'error');
+  toast('已保存', 'success');
+  ['workout-duration','workout-content'].forEach(function(id) { $(id).value = ''; });
+  refreshAll();
+};
+
+async function renderWorkoutList() {
+  const result = await supabase.from('workout_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
+  const c = $('workout-list');
+  if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
+  const byDate = {};
+  result.data.forEach(function(r) { (byDate[r.date] = byDate[r.date] || []).push(r); });
+  const dates = Object.keys(byDate).sort().reverse().slice(0, 14);
+  let h = '';
+  dates.forEach(function(d) {
+    const items = byDate[d];
+    h += '<div class="day-group"><div class="day-header"><span>' + d + '</span><span class="day-summary">' + items.length + ' 项</span></div>';
+    items.forEach(function(r) {
+      h += '<div class="day-item"><div style="flex:1;min-width:0;"><span class="muted">' + r.type + '</span>' + (r.duration ? ' · ' + r.duration + 'min' : '') + (r.content ? ' · ' + r.content : '') + '</div><button class="danger" data-id="' + r.id + '" data-table="workout_data">×</button></div>';
+    });
+    h += '</div>';
+  });
+  c.innerHTML = h;
+  bindDelete(c);
+}
+
+function bindDelete(container) {
+  container.querySelectorAll('.danger').forEach(function(b) {
+    b.onclick = async function() {
+      if (!confirm('确认删除?')) return;
+      const result = await supabase.from(b.getAttribute('data-table')).delete().eq('id', b.getAttribute('data-id'));
+      if (result.error) return toast('删除失败', 'error');
+      toast('已删除', 'success');
+      refreshAll();
+    };
+  });
+}
+
+// ============ 时间工具 ============
+function getWeekKey(dateStr) {
+  const d = new Date(dateStr);
+  const day = d.getDay() || 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - day + 1);
+  return monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+}
+function getMonthKey(dateStr) {
+  const d = new Date(dateStr);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function fmtMD(dateStr) {
+  const d = new Date(dateStr);
+  return (d.getMonth() + 1) + '/' + d.getDate();
+}
+function avg(arr) {
+  const valid = arr.filter(function(v) { return v != null && !isNaN(v); });
+  if (valid.length === 0) return null;
+  return valid.reduce(function(s, v) { return s + v; }, 0) / valid.length;
+}
+
+function aggregateBody(data, period) {
+  if (!data || data.length === 0) return { labels: [], records: [] };
+  const today = new Date();
+
+  if (period === 'day') {
+    return {
+      labels: data.map(function(r) { return fmtMD(r.date); }),
+      records: data.slice()
+    };
+  }
+
+  const groups = {};
+
+  if (period === 'week') {
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() - 28);
+    data.forEach(function(r) {
+      if (new Date(r.date) >= cutoff) {
+        const k = getWeekKey(r.date);
+        (groups[k] = groups[k] || []).push(r);
+      }
+    });
+    const keys = Object.keys(groups).sort();
+    return {
+      labels: keys.map(function(k) {
+        const d = new Date(k);
+        return (d.getMonth() + 1) + '/' + d.getDate() + '周';
+      }),
+      groups: keys.map(function(k) { return groups[k]; })
+    };
+  }
+
+  if (period === 'month') {
+    const cutoff = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+    data.forEach(function(r) {
+      if (new Date(r.date) >= cutoff) {
+        const k = getMonthKey(r.date);
+        (groups[k] = groups[k] || []).push(r);
+      }
+    });
+    const keys = Object.keys(groups).sort();
+    return {
+      labels: keys.map(function(k) { return parseInt(k.split('-')[1]) + '月'; }),
+      groups: keys.map(function(k) { return groups[k]; })
+    };
+  }
+
+  if (period === 'year') {
+    const year = today.getFullYear();
+    for (let m = 1; m <= 12; m++) {
+      groups[year + '-' + String(m).padStart(2, '0')] = [];
+    }
+    data.forEach(function(r) {
+      if (new Date(r.date).getFullYear() === year) {
+        const k = getMonthKey(r.date);
+        if (groups[k]) groups[k].push(r);
+      }
+    });
+    const keys = Object.keys(groups).sort();
+    return {
+      labels: keys.map(function(k) { return parseInt(k.split('-')[1]) + '月'; }),
+      groups: keys.map(function(k) { return groups[k]; })
+    };
+  }
+}
+
+async function refreshAll() {
+  await renderBodyList();
+  await renderDietList();
+  await renderWorkoutList();
+  await renderStats();
+  await renderWeightChart();
+  await renderRatioChart();
+  await renderWorkoutChart();
+}
+
+async function renderStats() {
+  const result = await supabase.from('body_data').select('*').order('date', { ascending: true });
+  if (!result.data || result.data.length === 0) {
+    $('stat-weight').textContent = '—';
+    $('stat-fat').textContent = '—';
+    $('stat-muscle').textContent = '—';
+    $('stat-bf').textContent = '—';
+    return;
+  }
+  const data = result.data;
+  const last = data[data.length - 1];
+  const prev = data.length > 1 ? data[data.length - 2] : null;
+  $('stat-weight').textContent = last.weight.toFixed(2) + ' kg';
+  $('stat-fat').textContent = last.fat ? last.fat.toFixed(2) + ' kg' : '—';
+  $('stat-muscle').textContent = last.muscle ? last.muscle.toFixed(2) + ' kg' : '—';
+  $('stat-bf').textContent = (last.fat && last.weight) ? ((last.fat / last.weight) * 100).toFixed(1) + '%' : '—';
+
+  if (prev) {
+    setChange('stat-weight-change', last.weight - prev.weight, 'kg', false);
+    if (last.fat != null && prev.fat != null) setChange('stat-fat-change', last.fat - prev.fat, 'kg', false);
+    else $('stat-fat-change').textContent = '';
+    if (last.muscle != null && prev.muscle != null) setChange('stat-muscle-change', last.muscle - prev.muscle, 'kg', true);
+    else $('stat-muscle-change').textContent = '';
+    if (last.fat && prev.fat) {
+      setChange('stat-bf-change', (last.fat / last.weight) * 100 - (prev.fat / prev.weight) * 100, '%', false);
+    } else $('stat-bf-change').textContent = '';
+  } else {
+    ['stat-weight-change','stat-fat-change','stat-muscle-change','stat-bf-change'].forEach(function(id) { $(id).textContent = ''; });
+  }
+}
+
+function setChange(id, diff, unit, increaseGood) {
+  const el = $(id);
+  if (Math.abs(diff) < 0.01) { el.textContent = ''; return; }
+  const arrow = diff > 0 ? '↑' : '↓';
+  el.textContent = arrow + ' ' + Math.abs(diff).toFixed(2) + unit;
+  el.className = 'stat-change ' + ((diff > 0) === increaseGood ? 'good' : 'bad');
+}
+
+let weightChartInstance = null;
+let ratioChartInstance = null;
+let workoutChartInstance = null;
+
+async function renderWeightChart() {
+  const period = getActivePeriod('weight');
+  const result = await supabase.from('body_data').select('*').order('date', { ascending: true });
+  const agg = aggregateBody(result.data || [], period);
+  let labels = agg.labels;
+  let values;
+
+  if (period === 'day') {
+    values = agg.records.map(function(r) { return r.weight; });
+  } else {
+    values = agg.groups.map(function(g) {
+      const v = avg(g.map(function(r) { return r.weight; }));
+      return v != null ? parseFloat(v.toFixed(2)) : null;
+    });
+  }
+
+  const today = new Date();
+  if (period === 'day') $('weight-meta').textContent = '所有记录';
+  else if (period === 'week') $('weight-meta').textContent = '最近 4 周(每周平均)';
+  else if (period === 'month') $('weight-meta').textContent = '最近 6 月(每月平均)';
+  else $('weight-meta').textContent = today.getFullYear() + ' 年(每月平均)';
+
+  if (weightChartInstance) weightChartInstance.destroy();
+  weightChartInstance = new Chart($('weight-chart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '体重',
+        data: values,
+        borderColor: '#D85A30',
+        backgroundColor: '#FAECE7',
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: '#D85A30',
+        fill: true,
+        borderWidth: 2,
+        spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' kg' : '无数据'; } } }
+      },
+      scales: { y: { beginAtZero: false } }
+    }
+  });
+}
+
+async function renderRatioChart() {
+  const period = getActivePeriod('ratio');
+  const result = await supabase.from('body_data').select('*').order('date', { ascending: true });
+  const valid = (result.data || []).filter(function(r) { return r.fat != null && r.muscle != null && r.weight; });
+  const agg = aggregateBody(valid, period);
+  let labels = agg.labels;
+  let bfs, muscles;
+
+  if (period === 'day') {
+    bfs = agg.records.map(function(r) { return parseFloat(((r.fat / r.weight) * 100).toFixed(1)); });
+    muscles = agg.records.map(function(r) { return parseFloat(((r.muscle / r.weight) * 100).toFixed(1)); });
+  } else {
+    bfs = agg.groups.map(function(g) {
+      const v = avg(g.map(function(r) { return (r.fat / r.weight) * 100; }));
+      return v != null ? parseFloat(v.toFixed(1)) : null;
+    });
+    muscles = agg.groups.map(function(g) {
+      const v = avg(g.map(function(r) { return (r.muscle / r.weight) * 100; }));
+      return v != null ? parseFloat(v.toFixed(1)) : null;
+    });
+  }
+
+  const today = new Date();
+  if (period === 'day') $('ratio-meta').textContent = '所有记录';
+  else if (period === 'week') $('ratio-meta').textContent = '最近 4 周(每周平均)';
+  else if (period === 'month') $('ratio-meta').textContent = '最近 6 月(每月平均)';
+  else $('ratio-meta').textContent = today.getFullYear() + ' 年(每月平均)';
+
+  if (ratioChartInstance) ratioChartInstance.destroy();
+  ratioChartInstance = new Chart($('ratio-chart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: '体脂率 %', data: bfs, borderColor: '#D85A30', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#D85A30', borderWidth: 2, spanGaps: true },
+        { label: '肌肉率 %', data: muscles, borderColor: '#EF9F27', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#EF9F27', borderWidth: 2, spanGaps: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 12 } } },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : '无'); } } }
+      },
+      scales: { y: { beginAtZero: false } }
+    }
+  });
+}
+
+async function renderWorkoutChart() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const result = await supabase.from('workout_data').select('date, type').gte('date', year + '-01-01').lte('date', year + '-12-31');
+
+  const uniq = new Set();
+  (result.data || []).forEach(function(r) { uniq.add(r.date + '|' + r.type); });
+
+  const monthCount = Array(12).fill(0);
+  uniq.forEach(function(key) {
+    const date = key.split('|')[0];
+    const m = parseInt(date.split('-')[1]) - 1;
+    monthCount[m]++;
+  });
+
+  $('workout-title').textContent = '训练汇总(' + year + ' 年)';
+
+  if (workoutChartInstance) workoutChartInstance.destroy();
+  workoutChartInstance = new Chart($('workout-chart'), {
+    type: 'bar',
+    data: {
+      labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+      datasets: [{
+        label: '训练次数',
+        data: monthCount,
+        backgroundColor: '#D85A30',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0 } },
+        y: {}
+      }
+    }
+  });
+}
+
+init();
+</script>
+
+</body>
+</html>
