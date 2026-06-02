@@ -619,25 +619,29 @@ async function renderMonthlyBodySummary() {
   const c = $('monthly-body-table');
   if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无数据</div>'; return; }
 
-  // 按月分组，取每月最后一条记录
+  // 按月分组，取当月所有记录的平均值
   const byMonth = {};
   result.data.forEach(function(r) {
     const mk = getMonthKey(r.date);
-    byMonth[mk] = r; // 后面的会覆盖前面的，保留当月最新
+    if (!byMonth[mk]) byMonth[mk] = [];
+    byMonth[mk].push(r);
   });
 
   const months = Object.keys(byMonth).sort();
   let h = '<div style="overflow-x:auto;"><table class="monthly-body-table"><thead><tr>';
   h += '<th>月份</th><th>体重(kg)</th><th>脂肪(kg)</th><th>肌肉(kg)</th><th>体脂率</th></tr></thead><tbody>';
 
-  months.forEach(function(mk, i) {
-    const r = byMonth[mk];
-    const bf = (r.fat && r.weight) ? ((r.fat / r.weight) * 100).toFixed(1) + '%' : '—';
+  months.forEach(function(mk) {
+    const rows = byMonth[mk];
+    const w = avg(rows.map(function(r) { return r.weight; }));
+    const f = avg(rows.filter(function(r) { return r.fat != null; }).map(function(r) { return r.fat; }));
+    const m = avg(rows.filter(function(r) { return r.muscle != null; }).map(function(r) { return r.muscle; }));
+    const bf = (f != null && w != null) ? (f / w * 100).toFixed(1) + '%' : '—';
     h += '<tr>';
     h += '<td>' + parseInt(mk.split('-')[1]) + '月</td>';
-    h += '<td>' + r.weight.toFixed(2) + '</td>';
-    h += '<td>' + (r.fat ? r.fat.toFixed(2) : '—') + '</td>';
-    h += '<td>' + (r.muscle ? r.muscle.toFixed(2) : '—') + '</td>';
+    h += '<td>' + (w != null ? w.toFixed(2) : '—') + '</td>';
+    h += '<td>' + (f != null ? f.toFixed(2) : '—') + '</td>';
+    h += '<td>' + (m != null ? m.toFixed(2) : '—') + '</td>';
     h += '<td>' + bf + '</td>';
     h += '</tr>';
   });
