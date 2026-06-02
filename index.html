@@ -129,7 +129,21 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
 .period-btn.active { background: #FAC775; color: #412402; font-weight: 500; }
 .chart-container { position: relative; width: 100%; height: 240px; }
 .chart-tall { height: 380px; }
-@media (max-width: 600px) {
+.monthly-body-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.monthly-body-table th { font-weight: 500; color: #854F0B; font-size: 12px; padding: 8px 6px; border-bottom: 2px solid #f0e0c0; text-align: right; }
+.monthly-body-table th:first-child { text-align: left; }
+.monthly-body-table td { padding: 8px 6px; border-bottom: 1px solid #f5ede0; text-align: right; }
+.monthly-body-table td:first-child { text-align: left; font-weight: 500; color: #4A1B0C; }
+.monthly-body-table tr:last-child td { border-bottom: none; }
+.monthly-body-table .change-good { color: #1d9e75; font-size: 11px; }
+.monthly-body-table .change-bad { color: #d44; font-size: 11px; }
+.workout-stat-pill { background: #FAEEDA; border-radius: 8px; padding: 8px 14px; font-size: 13px; color: #4A1B0C; }
+.workout-stat-pill span { font-size: 18px; font-weight: 500; margin-left: 4px; }
+.aerobic-pill { background: #FAECE7; color: #993C1D; }
+.aerobic-pill span { color: #993C1D; }
+.anaerobic-pill { background: #FBEAF0; color: #993556; }
+.anaerobic-pill span { color: #993556; }
+
   .app { padding: 8px; }
   .card, .chart-card { padding: 16px; }
   .header { padding: 12px 16px; }
@@ -180,30 +194,59 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
       <div class="chart-container"><canvas id="weight-chart"></canvas></div>
     </div>
 
+    <!-- 每月身体数据汇总 -->
+
+    <!-- 增肌趋势 -->
     <div class="chart-card">
       <div class="chart-header">
         <div>
-          <div class="chart-title">增肌减脂趋势</div>
-          <div class="chart-meta" id="ratio-meta"></div>
+          <div class="chart-title">增肌趋势（肌肉率 %）</div>
+          <div class="chart-meta" id="muscle-meta"></div>
         </div>
         <div class="period-switch">
-          <button class="period-btn active" data-target="ratio" data-period="day">日</button>
-          <button class="period-btn" data-target="ratio" data-period="week">周</button>
-          <button class="period-btn" data-target="ratio" data-period="month">月</button>
-          <button class="period-btn" data-target="ratio" data-period="year">年</button>
+          <button class="period-btn active" data-target="muscle" data-period="day">日</button>
+          <button class="period-btn" data-target="muscle" data-period="week">周</button>
+          <button class="period-btn" data-target="muscle" data-period="month">月</button>
+          <button class="period-btn" data-target="muscle" data-period="year">年</button>
         </div>
       </div>
-      <div class="chart-container"><canvas id="ratio-chart"></canvas></div>
+      <div class="chart-container"><canvas id="muscle-chart"></canvas></div>
     </div>
 
+    <!-- 减脂趋势 -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">减脂趋势（体脂率 %）</div>
+          <div class="chart-meta" id="fat-trend-meta"></div>
+        </div>
+        <div class="period-switch">
+          <button class="period-btn active" data-target="fattend" data-period="day">日</button>
+          <button class="period-btn" data-target="fattend" data-period="week">周</button>
+          <button class="period-btn" data-target="fattend" data-period="month">月</button>
+          <button class="period-btn" data-target="fattend" data-period="year">年</button>
+        </div>
+      </div>
+      <div class="chart-container"><canvas id="fat-trend-chart"></canvas></div>
+    </div>
+
+    <!-- 训练汇总 -->
     <div class="chart-card">
       <div class="chart-header">
         <div>
           <div class="chart-title" id="workout-title">训练汇总</div>
-          <div class="chart-meta">每月训练次数</div>
+          <div class="chart-meta">每月训练次数（有氧 / 无氧）</div>
         </div>
       </div>
+      <!-- 月度次数汇总文字 -->
+      <div id="workout-monthly-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;"></div>
       <div class="chart-container chart-tall"><canvas id="workout-chart"></canvas></div>
+    </div>
+
+    <!-- 每月身体数据汇总（放最底部） -->
+    <div class="card" id="monthly-body-summary">
+      <h2>每月身体数据汇总</h2>
+      <div id="monthly-body-table"><div class="empty">暂无数据</div></div>
     </div>
   </div>
 
@@ -262,6 +305,8 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script>Chart.unregister(ChartDataLabels);</script>
 
 <script>
 // ============ 配置区:把下面两个值改成你自己的 ============
@@ -306,7 +351,8 @@ document.querySelectorAll('.period-btn').forEach(function(btn) {
     document.querySelectorAll('.period-btn[data-target="' + target + '"]').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
     if (target === 'weight') renderWeightChart();
-    if (target === 'ratio') renderRatioChart();
+    if (target === 'muscle') renderMuscleChart();
+    if (target === 'fattend') renderFatTrendChart();
   };
 });
 
@@ -517,8 +563,10 @@ async function refreshAll() {
   await renderWorkoutList();
   await renderStats();
   await renderWeightChart();
-  await renderRatioChart();
+  await renderMuscleChart();
+  await renderFatTrendChart();
   await renderWorkoutChart();
+  await renderMonthlyBodySummary();
 }
 
 async function renderStats() {
@@ -561,8 +609,132 @@ function setChange(id, diff, unit, increaseGood) {
 }
 
 let weightChartInstance = null;
-let ratioChartInstance = null;
+let muscleChartInstance = null;
+let fatTrendChartInstance = null;
 let workoutChartInstance = null;
+
+// ── 每月身体数据汇总表 ──────────────────────────────────
+async function renderMonthlyBodySummary() {
+  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
+  const c = $('monthly-body-table');
+  if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+
+  // 按月分组，取每月最后一条记录
+  const byMonth = {};
+  result.data.forEach(function(r) {
+    const mk = getMonthKey(r.date);
+    byMonth[mk] = r; // 后面的会覆盖前面的，保留当月最新
+  });
+
+  const months = Object.keys(byMonth).sort();
+  let h = '<div style="overflow-x:auto;"><table class="monthly-body-table"><thead><tr>';
+  h += '<th>月份</th><th>体重(kg)</th><th>脂肪(kg)</th><th>肌肉(kg)</th><th>体脂率</th></tr></thead><tbody>';
+
+  months.forEach(function(mk, i) {
+    const r = byMonth[mk];
+    const bf = (r.fat && r.weight) ? ((r.fat / r.weight) * 100).toFixed(1) + '%' : '—';
+    h += '<tr>';
+    h += '<td>' + parseInt(mk.split('-')[1]) + '月</td>';
+    h += '<td>' + r.weight.toFixed(2) + '</td>';
+    h += '<td>' + (r.fat ? r.fat.toFixed(2) : '—') + '</td>';
+    h += '<td>' + (r.muscle ? r.muscle.toFixed(2) : '—') + '</td>';
+    h += '<td>' + bf + '</td>';
+    h += '</tr>';
+  });
+
+  h += '</tbody></table></div>';
+  c.innerHTML = h;
+}
+
+// ── 增肌趋势图 ─────────────────────────────────────────
+async function renderMuscleChart() {
+  const period = getActivePeriod('muscle');
+  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
+  const valid = (result.data || []).filter(function(r) { return r.muscle != null && r.weight; });
+  const agg = aggregateBody(valid, period);
+  let labels = agg.labels;
+  let muscles;
+
+  if (period === 'day') {
+    muscles = agg.records.map(function(r) { return parseFloat(((r.muscle / r.weight) * 100).toFixed(1)); });
+  } else {
+    muscles = agg.groups.map(function(g) {
+      const v = avg(g.map(function(r) { return (r.muscle / r.weight) * 100; }));
+      return v != null ? parseFloat(v.toFixed(1)) : null;
+    });
+  }
+
+  const today = new Date();
+  if (period === 'day') $('muscle-meta').textContent = '所有记录';
+  else if (period === 'week') $('muscle-meta').textContent = '最近 4 周(每周平均)';
+  else if (period === 'month') $('muscle-meta').textContent = '最近 6 月(每月平均)';
+  else $('muscle-meta').textContent = today.getFullYear() + ' 年(每月平均)';
+
+  if (muscleChartInstance) muscleChartInstance.destroy();
+  muscleChartInstance = new Chart($('muscle-chart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: '肌肉率 %', data: muscles, borderColor: '#EF9F27', backgroundColor: 'rgba(239,159,39,0.1)', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#EF9F27', borderWidth: 2, spanGaps: true, fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : '无'); } } },
+      },
+      scales: { y: { beginAtZero: false } },
+    },
+  });
+}
+
+// ── 减脂趋势图 ─────────────────────────────────────────
+async function renderFatTrendChart() {
+  const period = getActivePeriod('fattend');
+  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
+  const valid = (result.data || []).filter(function(r) { return r.fat != null && r.weight; });
+  const agg = aggregateBody(valid, period);
+  let labels = agg.labels;
+  let bfs;
+
+  if (period === 'day') {
+    bfs = agg.records.map(function(r) { return parseFloat(((r.fat / r.weight) * 100).toFixed(1)); });
+  } else {
+    bfs = agg.groups.map(function(g) {
+      const v = avg(g.map(function(r) { return (r.fat / r.weight) * 100; }));
+      return v != null ? parseFloat(v.toFixed(1)) : null;
+    });
+  }
+
+  const today = new Date();
+  if (period === 'day') $('fat-trend-meta').textContent = '所有记录';
+  else if (period === 'week') $('fat-trend-meta').textContent = '最近 4 周(每周平均)';
+  else if (period === 'month') $('fat-trend-meta').textContent = '最近 6 月(每月平均)';
+  else $('fat-trend-meta').textContent = today.getFullYear() + ' 年(每月平均)';
+
+  if (fatTrendChartInstance) fatTrendChartInstance.destroy();
+  fatTrendChartInstance = new Chart($('fat-trend-chart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: '体脂率 %', data: bfs, borderColor: '#D85A30', backgroundColor: 'rgba(216,90,48,0.1)', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#D85A30', borderWidth: 2, spanGaps: true, fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : '无'); } } },
+      },
+      scales: { y: { beginAtZero: false } },
+    },
+  });
+}
 
 async function renderWeightChart() {
   const period = getActivePeriod('weight');
@@ -609,60 +781,10 @@ async function renderWeightChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' kg' : '无数据'; } } }
+        tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' kg' : '无数据'; } } },
       },
-      scales: { y: { beginAtZero: false } }
-    }
-  });
-}
-
-async function renderRatioChart() {
-  const period = getActivePeriod('ratio');
-  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
-  const valid = (result.data || []).filter(function(r) { return r.fat != null && r.muscle != null && r.weight; });
-  const agg = aggregateBody(valid, period);
-  let labels = agg.labels;
-  let bfs, muscles;
-
-  if (period === 'day') {
-    bfs = agg.records.map(function(r) { return parseFloat(((r.fat / r.weight) * 100).toFixed(1)); });
-    muscles = agg.records.map(function(r) { return parseFloat(((r.muscle / r.weight) * 100).toFixed(1)); });
-  } else {
-    bfs = agg.groups.map(function(g) {
-      const v = avg(g.map(function(r) { return (r.fat / r.weight) * 100; }));
-      return v != null ? parseFloat(v.toFixed(1)) : null;
-    });
-    muscles = agg.groups.map(function(g) {
-      const v = avg(g.map(function(r) { return (r.muscle / r.weight) * 100; }));
-      return v != null ? parseFloat(v.toFixed(1)) : null;
-    });
-  }
-
-  const today = new Date();
-  if (period === 'day') $('ratio-meta').textContent = '所有记录';
-  else if (period === 'week') $('ratio-meta').textContent = '最近 4 周(每周平均)';
-  else if (period === 'month') $('ratio-meta').textContent = '最近 6 月(每月平均)';
-  else $('ratio-meta').textContent = today.getFullYear() + ' 年(每月平均)';
-
-  if (ratioChartInstance) ratioChartInstance.destroy();
-  ratioChartInstance = new Chart($('ratio-chart'), {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [
-        { label: '体脂率 %', data: bfs, borderColor: '#D85A30', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#D85A30', borderWidth: 2, spanGaps: true },
-        { label: '肌肉率 %', data: muscles, borderColor: '#EF9F27', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#EF9F27', borderWidth: 2, spanGaps: true }
-      ]
+      scales: { y: { beginAtZero: false } },
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 12 } } },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : '无'); } } }
-      },
-      scales: { y: { beginAtZero: false } }
-    }
   });
 }
 
@@ -671,15 +793,31 @@ async function renderWorkoutChart() {
   const year = today.getFullYear();
   const result = await sb.from('workout_data').select('date, type').gte('date', year + '-01-01').lte('date', year + '-12-31');
 
+  // 去重：同一天同一类型只算一次
   const uniq = new Set();
   (result.data || []).forEach(function(r) { uniq.add(r.date + '|' + r.type); });
 
-  const monthCount = Array(12).fill(0);
+  const monthTotal = Array(12).fill(0);
+  const monthAerobic = Array(12).fill(0);
+  const monthAnaerobic = Array(12).fill(0);
+
   uniq.forEach(function(key) {
-    const date = key.split('|')[0];
+    const parts = key.split('|');
+    const date = parts[0];
+    const type = parts[1];
     const m = parseInt(date.split('-')[1]) - 1;
-    monthCount[m]++;
+    monthTotal[m]++;
+    if (type === '有氧') monthAerobic[m]++;
+    else if (type === '无氧') monthAnaerobic[m]++;
   });
+
+  // 当月统计 pills
+  const curM = today.getMonth();
+  const statsEl = $('workout-monthly-stats');
+  statsEl.innerHTML =
+    '<div class="workout-stat-pill">本月运动<span>' + monthTotal[curM] + '</span> 次</div>' +
+    '<div class="workout-stat-pill aerobic-pill">有氧<span>' + monthAerobic[curM] + '</span> 次</div>' +
+    '<div class="workout-stat-pill anaerobic-pill">无氧<span>' + monthAnaerobic[curM] + '</span> 次</div>';
 
   $('workout-title').textContent = '训练汇总(' + year + ' 年)';
 
@@ -688,21 +826,30 @@ async function renderWorkoutChart() {
     type: 'bar',
     data: {
       labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
-      datasets: [{
-        label: '训练次数',
-        data: monthCount,
-        backgroundColor: '#D85A30',
-        borderRadius: 4
-      }]
+      datasets: [
+        { label: '有氧次数', data: monthAerobic, backgroundColor: '#F0997B', borderRadius: 4, stack: 'workout' },
+        { label: '无氧次数', data: monthAnaerobic, backgroundColor: '#D85A30', borderRadius: 4, stack: 'workout' }
+      ]
     },
     options: {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            afterBody: function(items) {
+              if (!items.length) return '';
+              const m = items[0].dataIndex;
+              return '合计: ' + monthTotal[m] + ' 次';
+            }
+          }
+        }
+      },
       scales: {
-        x: { beginAtZero: true, ticks: { precision: 0 } },
-        y: {}
+        x: { beginAtZero: true, ticks: { precision: 0 }, stacked: true },
+        y: { stacked: true }
       }
     }
   });
