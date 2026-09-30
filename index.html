@@ -124,19 +124,11 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
 .chart-title { font-size: 14px; font-weight: 500; color: #4A1B0C; }
 .chart-meta { font-size: 11px; color: #888; }
-.period-switch { display: inline-flex; gap: 2px; background: #FAEEDA; padding: 3px; border-radius: 8px; }
-.period-btn { padding: 4px 12px; border: none; background: none; cursor: pointer; font-size: 12px; border-radius: 5px; color: #854F0B; font-family: inherit; }
+.period-switch { max-width: 100%; overflow-x: auto; display: inline-flex; gap: 2px; background: #FAEEDA; padding: 3px; border-radius: 8px; }
+.period-btn { white-space: nowrap; padding: 4px 12px; border: none; background: none; cursor: pointer; font-size: 12px; border-radius: 5px; color: #854F0B; font-family: inherit; }
 .period-btn.active { background: #FAC775; color: #412402; font-weight: 500; }
 .chart-container { position: relative; width: 100%; height: 240px; }
 .chart-tall { height: 380px; }
-.monthly-body-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.monthly-body-table th { font-weight: 500; color: #854F0B; font-size: 12px; padding: 8px 6px; border-bottom: 2px solid #f0e0c0; text-align: right; }
-.monthly-body-table th:first-child { text-align: left; }
-.monthly-body-table td { padding: 8px 6px; border-bottom: 1px solid #f5ede0; text-align: right; }
-.monthly-body-table td:first-child { text-align: left; font-weight: 500; color: #4A1B0C; }
-.monthly-body-table tr:last-child td { border-bottom: none; }
-.monthly-body-table .change-good { color: #1d9e75; font-size: 11px; }
-.monthly-body-table .change-bad { color: #d44; font-size: 11px; }
 .workout-stat-pill { background: #FAEEDA; border-radius: 8px; padding: 8px 14px; font-size: 13px; color: #4A1B0C; }
 .workout-stat-pill span { font-size: 18px; font-weight: 500; margin-left: 4px; }
 .aerobic-pill { background: #FAECE7; color: #993C1D; }
@@ -144,6 +136,7 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
 .anaerobic-pill { background: #FBEAF0; color: #993556; }
 .anaerobic-pill span { color: #993556; }
 
+@media (max-width: 600px) {
   .app { padding: 8px; }
   .card, .chart-card { padding: 16px; }
   .header { padding: 12px 16px; }
@@ -151,6 +144,16 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
   .chart-container { height: 200px; }
   .chart-tall { height: 320px; }
 }
+.section-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.section-header h2 { margin-bottom:0; }
+button:disabled { opacity:0.5; cursor:wait; }
+#data-status { margin-bottom:12px; }
+.stat-note { font-size:11px; margin-top:4px; color:#666; }
+#stats-asof { margin-bottom:10px; }
+.weight-readout { display:flex; gap:32px; flex-wrap:wrap; padding:12px 0 16px; }
+.weight-readout .value { font-size:26px; font-weight:600; color:#4A1B0C; line-height:1.5; }
+.weight-readout .value small { font-size:13px; font-weight:400; }
+.weight-readout .muted { font-size:11px; }
 </style>
 </head>
 <body>
@@ -163,15 +166,16 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
   <div class="tabs">
     <button class="tab-btn active" data-tab="dashboard">概览</button>
     <button class="tab-btn" data-tab="body">身体</button>
-    <button class="tab-btn" data-tab="diet">饮食</button>
     <button class="tab-btn" data-tab="workout">运动</button>
   </div>
 
+  <div id="data-status" role="status" class="muted">正在加载数据…</div>
   <div id="tab-dashboard" class="tab-pane">
     <div class="card">
       <h2>当前数据</h2>
+      <p class="muted" id="stats-asof"></p>
       <div class="stats">
-        <div class="stat stat-1"><div class="stat-label">体重</div><div class="stat-value" id="stat-weight">—</div><div class="stat-change" id="stat-weight-change"></div></div>
+        <div class="stat stat-1"><div class="stat-label">体重</div><div class="stat-value" id="stat-weight">—</div><div class="stat-note" id="stat-weight-average"></div><div class="stat-change" id="stat-weight-change"></div></div>
         <div class="stat stat-2"><div class="stat-label">脂肪</div><div class="stat-value" id="stat-fat">—</div><div class="stat-change" id="stat-fat-change"></div></div>
         <div class="stat stat-3"><div class="stat-label">肌肉</div><div class="stat-value" id="stat-muscle">—</div><div class="stat-change" id="stat-muscle-change"></div></div>
         <div class="stat stat-4"><div class="stat-label">体脂率</div><div class="stat-value" id="stat-bf">—</div><div class="stat-change" id="stat-bf-change"></div></div>
@@ -185,16 +189,20 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
           <div class="chart-meta" id="weight-meta"></div>
         </div>
         <div class="period-switch">
-          <button class="period-btn active" data-target="weight" data-period="day">日</button>
-          <button class="period-btn" data-target="weight" data-period="week">周</button>
-          <button class="period-btn" data-target="weight" data-period="month">月</button>
-          <button class="period-btn" data-target="weight" data-period="year">年</button>
+          <button class="period-btn active" data-target="weight" data-period="30d">30天</button>
+          <button class="period-btn" data-target="weight" data-period="3m">3个月</button>
+          <button class="period-btn" data-target="weight" data-period="6m">6个月</button>
+          <button class="period-btn" data-target="weight" data-period="1y">1年</button>
+          <button class="period-btn" data-target="weight" data-period="all">全部</button>
         </div>
+      </div>
+      <div class="weight-readout" aria-live="polite">
+        <div><div class="muted">最近实测体重</div><div class="value" id="weight-actual">—</div><div class="muted" id="weight-actual-date"></div></div>
+        <div><div class="muted" id="weight-range-label">区间变化</div><div class="value" id="weight-range-change">—</div><div class="muted" id="weight-range-comparison"></div></div>
       </div>
       <div class="chart-container"><canvas id="weight-chart"></canvas></div>
     </div>
 
-    <!-- 每月身体数据汇总 -->
 
     <!-- 增肌趋势 -->
     <div class="chart-card">
@@ -204,10 +212,11 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
           <div class="chart-meta" id="muscle-meta"></div>
         </div>
         <div class="period-switch">
-          <button class="period-btn active" data-target="muscle" data-period="day">日</button>
-          <button class="period-btn" data-target="muscle" data-period="week">周</button>
-          <button class="period-btn" data-target="muscle" data-period="month">月</button>
-          <button class="period-btn" data-target="muscle" data-period="year">年</button>
+          <button class="period-btn active" data-target="muscle" data-period="30d">30天</button>
+          <button class="period-btn" data-target="muscle" data-period="3m">3个月</button>
+          <button class="period-btn" data-target="muscle" data-period="6m">6个月</button>
+          <button class="period-btn" data-target="muscle" data-period="1y">1年</button>
+          <button class="period-btn" data-target="muscle" data-period="all">全部</button>
         </div>
       </div>
       <div class="chart-container"><canvas id="muscle-chart"></canvas></div>
@@ -221,10 +230,11 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
           <div class="chart-meta" id="fat-trend-meta"></div>
         </div>
         <div class="period-switch">
-          <button class="period-btn active" data-target="fattend" data-period="day">日</button>
-          <button class="period-btn" data-target="fattend" data-period="week">周</button>
-          <button class="period-btn" data-target="fattend" data-period="month">月</button>
-          <button class="period-btn" data-target="fattend" data-period="year">年</button>
+          <button class="period-btn active" data-target="fattend" data-period="30d">30天</button>
+          <button class="period-btn" data-target="fattend" data-period="3m">3个月</button>
+          <button class="period-btn" data-target="fattend" data-period="6m">6个月</button>
+          <button class="period-btn" data-target="fattend" data-period="1y">1年</button>
+          <button class="period-btn" data-target="fattend" data-period="all">全部</button>
         </div>
       </div>
       <div class="chart-container"><canvas id="fat-trend-chart"></canvas></div>
@@ -235,7 +245,7 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
       <div class="chart-header">
         <div>
           <div class="chart-title" id="workout-title">训练汇总</div>
-          <div class="chart-meta">每月训练次数（有氧 / 无氧）</div>
+          <div class="chart-meta">每月训练次数（有氧 / 无氧），同日同类型计1次</div>
         </div>
       </div>
       <!-- 月度次数汇总文字 -->
@@ -243,43 +253,23 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
       <div class="chart-container chart-tall"><canvas id="workout-chart"></canvas></div>
     </div>
 
-    <!-- 每月身体数据汇总（放最底部） -->
-    <div class="card" id="monthly-body-summary">
-      <h2>每月身体数据汇总</h2>
-      <div id="monthly-body-table"><div class="empty">暂无数据</div></div>
-    </div>
   </div>
 
   <div id="tab-body" class="tab-pane" style="display:none;">
     <div class="card">
       <h2>记录身体数据</h2>
       <div class="form-grid">
-        <div class="field"><label>日期</label><input type="date" id="body-date"></div>
-        <div class="field"><label>体重 (kg)</label><input type="number" step="0.01" id="body-weight" placeholder="51.85"></div>
-        <div class="field"><label>脂肪 (kg)</label><input type="number" step="0.01" id="body-fat" placeholder="14.47"></div>
-        <div class="field"><label>肌肉 (kg)</label><input type="number" step="0.01" id="body-muscle" placeholder="19.30"></div>
+        <div class="field"><label for="body-date">日期</label><input type="date" id="body-date"></div>
+        <div class="field"><label for="body-weight">体重 (kg)</label><input type="number" step="0.01" id="body-weight" placeholder="51.85"></div>
+        <div class="field"><label for="body-fat">脂肪 (kg)</label><input type="number" step="0.01" id="body-fat" placeholder="14.47"></div>
+        <div class="field"><label for="body-muscle">肌肉 (kg)</label><input type="number" step="0.01" id="body-muscle" placeholder="19.30"></div>
       </div>
       <button id="save-body">保存</button>
     </div>
     <div class="card">
-      <h2>历史记录</h2>
+      <div class="section-header"><h2>历史记录</h2><button id="export-body" disabled>导出身体 CSV</button></div>
+      <p class="muted">显示最近60条，CSV包含全部历史记录。</p>
       <div id="body-list"></div>
-    </div>
-  </div>
-
-  <div id="tab-diet" class="tab-pane" style="display:none;">
-    <div class="card">
-      <h2>记录饮食</h2>
-      <div class="form-grid">
-        <div class="field"><label>日期</label><input type="date" id="diet-date"></div>
-        <div class="field"><label>餐次</label><select id="diet-meal"><option>早餐</option><option>午餐</option><option>晚餐</option><option>加餐</option></select></div>
-      </div>
-      <div class="field" style="margin-bottom:12px;"><label>食物内容</label><textarea id="diet-content" placeholder="鸡胸沙拉、糙米饭..."></textarea></div>
-      <button id="save-diet">保存</button>
-    </div>
-    <div class="card">
-      <h2>历史记录</h2>
-      <div id="diet-list"></div>
     </div>
   </div>
 
@@ -287,15 +277,16 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
     <div class="card">
       <h2>记录运动</h2>
       <div class="form-grid">
-        <div class="field"><label>日期</label><input type="date" id="workout-date"></div>
-        <div class="field"><label>形式</label><select id="workout-type"><option>有氧</option><option>无氧</option></select></div>
-        <div class="field"><label>时长 (分钟)</label><input type="number" id="workout-duration" placeholder="30"></div>
+        <div class="field"><label for="workout-date">日期</label><input type="date" id="workout-date"></div>
+        <div class="field"><label for="workout-type">形式</label><select id="workout-type"><option>有氧</option><option>无氧</option></select></div>
+        <div class="field"><label for="workout-duration">时长 (分钟)</label><input type="number" id="workout-duration" placeholder="30"></div>
       </div>
-      <div class="field" style="margin-bottom:12px;"><label>内容</label><input type="text" id="workout-content" placeholder='跑步 5km / 哑铃深蹲 10kg 3×12'></div>
+      <div class="field" style="margin-bottom:12px;"><label for="workout-content">内容</label><input type="text" id="workout-content" placeholder='跑步 5km / 哑铃深蹲 10kg 3×12'></div>
       <button id="save-workout">保存</button>
     </div>
     <div class="card">
-      <h2>历史记录</h2>
+      <div class="section-header"><h2>历史记录</h2><button id="export-workout" disabled>导出运动 CSV</button></div>
+      <p class="muted">显示最近14个有记录的日期，CSV包含全部历史记录。</p>
       <div id="workout-list"></div>
     </div>
   </div>
@@ -305,8 +296,7 @@ th { font-weight: 500; color: #854F0B; font-size: 12px; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-<script>Chart.unregister(ChartDataLabels);</script>
+<script src="./stats.js"></script>
 
 <script>
 // ============ 配置区:把下面两个值改成你自己的 ============
@@ -331,7 +321,7 @@ function toast(msg, type) {
 }
 
 function init() {
-  ['body-date', 'diet-date', 'workout-date'].forEach(function(id) { $(id).value = todayStr(); });
+  ['body-date', 'workout-date'].forEach(function(id) { $(id).value = todayStr(); });
   refreshAll();
 }
 
@@ -341,7 +331,7 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
     btn.classList.add('active');
     document.querySelectorAll('.tab-pane').forEach(function(p) { p.style.display = 'none'; });
     $('tab-' + btn.getAttribute('data-tab')).style.display = 'block';
-    refreshAll();
+    Object.values(charts).forEach(chart => chart.resize());
   };
 });
 
@@ -358,19 +348,20 @@ document.querySelectorAll('.period-btn').forEach(function(btn) {
 
 function getActivePeriod(target) {
   const btn = document.querySelector('.period-btn[data-target="' + target + '"].active');
-  return btn ? btn.getAttribute('data-period') : 'day';
+  return btn ? btn.getAttribute('data-period') : '30d';
 }
 
 $('save-body').onclick = async function() {
   const date = $('body-date').value;
   const weight = parseFloat($('body-weight').value);
-  if (!date || !weight) return toast('请填写日期和体重', 'error');
+  if (!date || !Number.isFinite(weight) || weight <= 0) return toast('请填写日期和体重', 'error');
   const record = {
     date: date,
     weight: weight,
-    fat: parseFloat($('body-fat').value) || null,
-    muscle: parseFloat($('body-muscle').value) || null
+    fat: H.number($('body-fat').value),
+    muscle: H.number($('body-muscle').value)
   };
+  if ((record.fat != null && record.fat < 0) || (record.muscle != null && record.muscle < 0)) return toast('脂肪和肌肉不能为负数', 'error');
   const result = await sb.from('body_data').upsert(record, { onConflict: 'date' });
   if (result.error) return toast('保存失败: ' + result.error.message, 'error');
   toast('已保存', 'success');
@@ -378,47 +369,16 @@ $('save-body').onclick = async function() {
   refreshAll();
 };
 
-async function renderBodyList() {
-  const result = await sb.from('body_data').select('*').order('date', { ascending: false }).limit(60);
+function renderBodyList() {
+  const result = { data: bodyData.slice().reverse().slice(0, 60) };
   const c = $('body-list');
   if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
   let h = '<div style="overflow-x:auto;"><table><thead><tr><th>日期</th><th class="num">体重</th><th class="num">脂肪</th><th class="num">肌肉</th><th class="num">体脂率</th><th></th></tr></thead><tbody>';
   result.data.forEach(function(r) {
-    const bf = (r.fat && r.weight) ? ((r.fat / r.weight) * 100).toFixed(1) + '%' : '—';
-    h += '<tr><td>' + r.date + '</td><td class="num">' + r.weight.toFixed(2) + '</td><td class="num">' + (r.fat ? r.fat.toFixed(2) : '—') + '</td><td class="num">' + (r.muscle ? r.muscle.toFixed(2) : '—') + '</td><td class="num">' + bf + '</td><td class="num"><button class="danger" data-id="' + r.id + '" data-table="body_data">删除</button></td></tr>';
+    const bf = H.ratio(r, 'fat') == null ? '—' : format(H.ratio(r, 'fat'), 1) + '%';
+    h += '<tr><td>' + r.date + '</td><td class="num">' + format(H.number(r.weight)) + '</td><td class="num">' + format(H.number(r.fat)) + '</td><td class="num">' + format(H.number(r.muscle)) + '</td><td class="num">' + bf + '</td><td class="num"><button class="danger" data-id="' + r.id + '" data-table="body_data">删除</button></td></tr>';
   });
   h += '</tbody></table></div>';
-  c.innerHTML = h;
-  bindDelete(c);
-}
-
-$('save-diet').onclick = async function() {
-  const date = $('diet-date').value;
-  const content = $('diet-content').value.trim();
-  if (!date || !content) return toast('请填写日期和食物', 'error');
-  const result = await sb.from('diet_data').insert({ date: date, meal: $('diet-meal').value, content: content });
-  if (result.error) return toast('保存失败: ' + result.error.message, 'error');
-  toast('已保存', 'success');
-  $('diet-content').value = '';
-  refreshAll();
-};
-
-async function renderDietList() {
-  const result = await sb.from('diet_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
-  const c = $('diet-list');
-  if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
-  const byDate = {};
-  result.data.forEach(function(r) { (byDate[r.date] = byDate[r.date] || []).push(r); });
-  const dates = Object.keys(byDate).sort().reverse().slice(0, 14);
-  let h = '';
-  dates.forEach(function(d) {
-    const items = byDate[d];
-    h += '<div class="day-group"><div class="day-header"><span>' + d + '</span><span class="day-summary">' + items.length + ' 餐</span></div>';
-    items.forEach(function(r) {
-      h += '<div class="day-item"><div style="flex:1;min-width:0;"><span class="muted">' + r.meal + '</span> · ' + r.content + '</div><button class="danger" data-id="' + r.id + '" data-table="diet_data">×</button></div>';
-    });
-    h += '</div>';
-  });
   c.innerHTML = h;
   bindDelete(c);
 }
@@ -426,10 +386,12 @@ async function renderDietList() {
 $('save-workout').onclick = async function() {
   const date = $('workout-date').value;
   if (!date) return toast('请填写日期', 'error');
+  const duration = $('workout-duration').value === '' ? null : Number($('workout-duration').value);
+  if (duration != null && (!Number.isInteger(duration) || duration < 0)) return toast('时长请填写非负整数分钟', 'error');
   const result = await sb.from('workout_data').insert({
     date: date,
     type: $('workout-type').value,
-    duration: parseInt($('workout-duration').value) || null,
+    duration: duration,
     content: $('workout-content').value.trim() || null
   });
   if (result.error) return toast('保存失败: ' + result.error.message, 'error');
@@ -438,8 +400,8 @@ $('save-workout').onclick = async function() {
   refreshAll();
 };
 
-async function renderWorkoutList() {
-  const result = await sb.from('workout_data').select('*').order('date', { ascending: false }).order('id', { ascending: false }).limit(100);
+function renderWorkoutList() {
+  const result = { data: workoutData.slice().reverse() };
   const c = $('workout-list');
   if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无记录</div>'; return; }
   const byDate = {};
@@ -450,7 +412,7 @@ async function renderWorkoutList() {
     const items = byDate[d];
     h += '<div class="day-group"><div class="day-header"><span>' + d + '</span><span class="day-summary">' + items.length + ' 项</span></div>';
     items.forEach(function(r) {
-      h += '<div class="day-item"><div style="flex:1;min-width:0;"><span class="muted">' + r.type + '</span>' + (r.duration ? ' · ' + r.duration + 'min' : '') + (r.content ? ' · ' + r.content : '') + '</div><button class="danger" data-id="' + r.id + '" data-table="workout_data">×</button></div>';
+      h += '<div class="day-item"><div style="flex:1;min-width:0;"><span class="muted">' + escapeHtml(r.type) + '</span>' + (r.duration != null ? ' · ' + r.duration + 'min' : '') + (r.content ? ' · ' + escapeHtml(r.content) : '') + '</div><button class="danger" data-id="' + r.id + '" data-table="workout_data">×</button></div>';
     });
     h += '</div>';
   });
@@ -470,396 +432,236 @@ function bindDelete(container) {
   });
 }
 
-function getWeekKey(dateStr) {
-  const d = new Date(dateStr);
-  const day = d.getDay() || 7;
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - day + 1);
-  return monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+const H = HealthStats;
+let bodyData = [], workoutData = [];
+let loaded = false, refreshVersion = 0;
+const charts = {};
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
-function getMonthKey(dateStr) {
-  const d = new Date(dateStr);
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
-function fmtMD(dateStr) {
-  const d = new Date(dateStr);
-  return (d.getMonth() + 1) + '/' + d.getDate();
-}
-function avg(arr) {
-  const valid = arr.filter(function(v) { return v != null && !isNaN(v); });
-  if (valid.length === 0) return null;
-  return valid.reduce(function(s, v) { return s + v; }, 0) / valid.length;
-}
+function format(value, decimals = 2) { return value == null ? '—' : Number(value).toFixed(decimals); }
 
-function aggregateBody(data, period) {
-  if (!data || data.length === 0) return { labels: [], records: [] };
-  const today = new Date();
-
-  if (period === 'day') {
-    return {
-      labels: data.map(function(r) { return fmtMD(r.date); }),
-      records: data.slice()
-    };
-  }
-
-  const groups = {};
-
-  if (period === 'week') {
-    const cutoff = new Date(today);
-    cutoff.setDate(cutoff.getDate() - 28);
-    data.forEach(function(r) {
-      if (new Date(r.date) >= cutoff) {
-        const k = getWeekKey(r.date);
-        (groups[k] = groups[k] || []).push(r);
-      }
-    });
-    const keys = Object.keys(groups).sort();
-    return {
-      labels: keys.map(function(k) {
-        const d = new Date(k);
-        return (d.getMonth() + 1) + '/' + d.getDate() + '周';
-      }),
-      groups: keys.map(function(k) { return groups[k]; })
-    };
-  }
-
-  if (period === 'month') {
-    const cutoff = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-    data.forEach(function(r) {
-      if (new Date(r.date) >= cutoff) {
-        const k = getMonthKey(r.date);
-        (groups[k] = groups[k] || []).push(r);
-      }
-    });
-    const keys = Object.keys(groups).sort();
-    return {
-      labels: keys.map(function(k) { return parseInt(k.split('-')[1]) + '月'; }),
-      groups: keys.map(function(k) { return groups[k]; })
-    };
-  }
-
-  if (period === 'year') {
-    const year = today.getFullYear();
-    for (let m = 1; m <= 12; m++) {
-      groups[year + '-' + String(m).padStart(2, '0')] = [];
-    }
-    data.forEach(function(r) {
-      if (new Date(r.date).getFullYear() === year) {
-        const k = getMonthKey(r.date);
-        if (groups[k]) groups[k].push(r);
-      }
-    });
-    const keys = Object.keys(groups).sort();
-    return {
-      labels: keys.map(function(k) { return parseInt(k.split('-')[1]) + '月'; }),
-      groups: keys.map(function(k) { return groups[k]; })
-    };
+async function fetchAll(table) {
+  const rows = [];
+  for (;;) {
+    const { data, error } = await sb.from(table).select('*')
+      .order('date', { ascending: true }).order('id', { ascending: true }).range(rows.length, rows.length + 499);
+    if (error) throw error;
+    if (!data || !data.length) return rows;
+    rows.push(...data);
   }
 }
 
 async function refreshAll() {
-  await renderBodyList();
-  await renderDietList();
-  await renderWorkoutList();
-  await renderStats();
-  await renderWeightChart();
-  await renderMuscleChart();
-  await renderFatTrendChart();
-  await renderWorkoutChart();
-  await renderMonthlyBodySummary();
-}
-
-async function renderStats() {
-  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
-  if (!result.data || result.data.length === 0) {
-    $('stat-weight').textContent = '—';
-    $('stat-fat').textContent = '—';
-    $('stat-muscle').textContent = '—';
-    $('stat-bf').textContent = '—';
-    return;
-  }
-  const data = result.data;
-  const last = data[data.length - 1];
-  const prev = data.length > 1 ? data[data.length - 2] : null;
-  $('stat-weight').textContent = last.weight.toFixed(2) + ' kg';
-  $('stat-fat').textContent = last.fat ? last.fat.toFixed(2) + ' kg' : '—';
-  $('stat-muscle').textContent = last.muscle ? last.muscle.toFixed(2) + ' kg' : '—';
-  $('stat-bf').textContent = (last.fat && last.weight) ? ((last.fat / last.weight) * 100).toFixed(1) + '%' : '—';
-
-  if (prev) {
-    setChange('stat-weight-change', last.weight - prev.weight, 'kg', false);
-    if (last.fat != null && prev.fat != null) setChange('stat-fat-change', last.fat - prev.fat, 'kg', false);
-    else $('stat-fat-change').textContent = '';
-    if (last.muscle != null && prev.muscle != null) setChange('stat-muscle-change', last.muscle - prev.muscle, 'kg', true);
-    else $('stat-muscle-change').textContent = '';
-    if (last.fat && prev.fat) {
-      setChange('stat-bf-change', (last.fat / last.weight) * 100 - (prev.fat / prev.weight) * 100, '%', false);
-    } else $('stat-bf-change').textContent = '';
-  } else {
-    ['stat-weight-change','stat-fat-change','stat-muscle-change','stat-bf-change'].forEach(function(id) { $(id).textContent = ''; });
+  const version = ++refreshVersion;
+  $('export-body').disabled = $('export-workout').disabled = true;
+  $('data-status').textContent = '正在加载数据…';
+  try {
+    const [body, workout] = await Promise.all([fetchAll('body_data'), fetchAll('workout_data')]);
+    if (version !== refreshVersion) return;
+    bodyData = body;
+    workoutData = workout;
+    loaded = true;
+    renderBodyList();
+    renderWorkoutList();
+    renderStats();
+    renderWeightChart();
+    renderMuscleChart();
+    renderFatTrendChart();
+    renderWorkoutChart();
+    $('data-status').textContent = '已加载 ' + body.length + ' 条身体记录、' + workout.length + ' 条运动记录';
+    $('export-body').disabled = $('export-workout').disabled = false;
+  } catch (error) {
+    if (version !== refreshVersion) return;
+    $('data-status').textContent = (loaded ? '更新失败，当前显示上次加载的数据。' : '数据加载失败。') + '请重试。';
+    const retry = document.createElement('button');
+    retry.textContent = '重新加载';
+    retry.onclick = refreshAll;
+    $('data-status').appendChild(retry);
+    toast('加载失败: ' + error.message, 'error');
   }
 }
 
-function setChange(id, diff, unit, increaseGood) {
+function setChange(id, diff, unit, prefix) {
   const el = $(id);
-  if (Math.abs(diff) < 0.01) { el.textContent = ''; return; }
-  const arrow = diff > 0 ? '↑' : '↓';
-  el.textContent = arrow + ' ' + Math.abs(diff).toFixed(2) + unit;
-  el.className = 'stat-change ' + ((diff > 0) === increaseGood ? 'good' : 'bad');
+  el.className = 'stat-change';
+  if (diff == null) { el.textContent = '暂无趋势'; return; }
+  const rounded = Number(diff.toFixed(1));
+  el.textContent = prefix + (rounded === 0 ? '基本持平' : ' ' + (rounded > 0 ? '↑ ' : '↓ ') + format(Math.abs(rounded), 1) + ' ' + unit);
 }
-
-let weightChartInstance = null;
-let muscleChartInstance = null;
-let fatTrendChartInstance = null;
-let workoutChartInstance = null;
-
-// ── 每月身体数据汇总表 ──────────────────────────────────
-async function renderMonthlyBodySummary() {
-  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
-  const c = $('monthly-body-table');
-  if (!result.data || result.data.length === 0) { c.innerHTML = '<div class="empty">暂无数据</div>'; return; }
-
-  // 按月分组，取当月所有记录的平均值
-  const byMonth = {};
-  result.data.forEach(function(r) {
-    const mk = getMonthKey(r.date);
-    if (!byMonth[mk]) byMonth[mk] = [];
-    byMonth[mk].push(r);
+function renderStats() {
+  ['weight', 'fat', 'muscle', 'bf'].forEach(field => {
+    $('stat-' + field).textContent = '—';
+    $('stat-' + field + '-change').textContent = '';
+    $('stat-' + field + '-change').title = '';
   });
-
-  const months = Object.keys(byMonth).sort();
-  let h = '<div style="overflow-x:auto;"><table class="monthly-body-table"><thead><tr>';
-  h += '<th>月份</th><th>体重(kg)</th><th>脂肪(kg)</th><th>肌肉(kg)</th><th>体脂率</th></tr></thead><tbody>';
-
-  months.forEach(function(mk) {
-    const rows = byMonth[mk];
-    const w = avg(rows.map(function(r) { return r.weight; }));
-    const f = avg(rows.filter(function(r) { return r.fat != null; }).map(function(r) { return r.fat; }));
-    const m = avg(rows.filter(function(r) { return r.muscle != null; }).map(function(r) { return r.muscle; }));
-    const bf = (f != null && w != null) ? (f / w * 100).toFixed(1) + '%' : '—';
-    h += '<tr>';
-    h += '<td>' + parseInt(mk.split('-')[1]) + '月</td>';
-    h += '<td>' + (w != null ? w.toFixed(2) : '—') + '</td>';
-    h += '<td>' + (f != null ? f.toFixed(2) : '—') + '</td>';
-    h += '<td>' + (m != null ? m.toFixed(2) : '—') + '</td>';
-    h += '<td>' + bf + '</td>';
-    h += '</tr>';
+  $('stat-weight-average').textContent = '';
+  const data = bodyData.filter(row => row.date <= todayStr());
+  const last = data[data.length - 1];
+  $('stats-asof').textContent = last ? '最近记录：' + last.date : '暂无身体记录';
+  if (!last) return;
+  $('stat-weight').textContent = format(H.number(last.weight), 1) + ' kg';
+  $('stat-fat').textContent = last.fat == null ? '—' : format(last.fat, 1) + ' kg';
+  $('stat-muscle').textContent = last.muscle == null ? '—' : format(last.muscle, 1) + ' kg';
+  const bf = H.ratio(last, 'fat');
+  $('stat-bf').textContent = bf == null ? '—' : format(bf, 1) + '%';
+  const week = H.weeklyWeight(data, last.date);
+  $('stat-weight-average').textContent = '7日均值 ' + format(week.current.value, 1) + ' kg';
+  setChange('stat-weight-change', week.change, 'kg', '较上周');
+  ['fat', 'muscle', 'bf'].forEach(field => {
+    const change = H.monthChange(data, last, field);
+    setChange('stat-' + field + '-change', change ? change.change : null, field === 'bf' ? '个百分点' : 'kg', '近30天');
   });
-
-  h += '</tbody></table></div>';
-  c.innerHTML = h;
 }
-
-// ── 增肌趋势图 ─────────────────────────────────────────
-async function renderMuscleChart() {
-  const period = getActivePeriod('muscle');
-  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
-  const valid = (result.data || []).filter(function(r) { return r.muscle != null && r.weight; });
-  const agg = aggregateBody(valid, period);
-  let labels = agg.labels;
-  let muscles;
-
-  if (period === 'day') {
-    muscles = agg.records.map(function(r) { return parseFloat(((r.muscle / r.weight) * 100).toFixed(1)); });
-  } else {
-    muscles = agg.groups.map(function(g) {
-      const v = avg(g.map(function(r) { return (r.muscle / r.weight) * 100; }));
-      return v != null ? parseFloat(v.toFixed(1)) : null;
-    });
-  }
-
-  const today = new Date();
-  if (period === 'day') $('muscle-meta').textContent = '所有记录';
-  else if (period === 'week') $('muscle-meta').textContent = '最近 4 周(每周平均)';
-  else if (period === 'month') $('muscle-meta').textContent = '最近 6 月(每月平均)';
-  else $('muscle-meta').textContent = today.getFullYear() + ' 年(每月平均)';
-
-  if (muscleChartInstance) muscleChartInstance.destroy();
-  muscleChartInstance = new Chart($('muscle-chart'), {
+function replaceChart(key, canvas, config) {
+  if (charts[key]) charts[key].destroy();
+  charts[key] = new Chart($(canvas), config);
+}
+function lineChart(key, canvas, rows, datasets, unit) {
+  // Linear date coordinates preserve the true spacing between irregular records without a date adapter.
+  replaceChart(key, canvas, {
     type: 'line',
-    data: {
-      labels: labels,
-      datasets: [
-        { label: '肌肉率 %', data: muscles, borderColor: '#EF9F27', backgroundColor: 'rgba(239,159,39,0.1)', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#EF9F27', borderWidth: 2, spanGaps: true, fill: true }
-      ]
-    },
+    data: { datasets: datasets.map(dataset => ({
+      data: rows.map(row => ({ x: Date.parse(row.date + 'T00:00:00Z'), y: row[dataset.field] })),
+      pointRadius: rows.length > 100 ? 1 : 3,
+      borderWidth: 2,
+      tension: 0.15,
+      spanGaps: false,
+      fill: false,
+      ...dataset
+    })) },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : '无'); } } },
-      },
-      scales: { y: { beginAtZero: false } },
-    },
-  });
-}
-
-// ── 减脂趋势图 ─────────────────────────────────────────
-async function renderFatTrendChart() {
-  const period = getActivePeriod('fattend');
-  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
-  const valid = (result.data || []).filter(function(r) { return r.fat != null && r.weight; });
-  const agg = aggregateBody(valid, period);
-  let labels = agg.labels;
-  let bfs;
-
-  if (period === 'day') {
-    bfs = agg.records.map(function(r) { return parseFloat(((r.fat / r.weight) * 100).toFixed(1)); });
-  } else {
-    bfs = agg.groups.map(function(g) {
-      const v = avg(g.map(function(r) { return (r.fat / r.weight) * 100; }));
-      return v != null ? parseFloat(v.toFixed(1)) : null;
-    });
-  }
-
-  const today = new Date();
-  if (period === 'day') $('fat-trend-meta').textContent = '所有记录';
-  else if (period === 'week') $('fat-trend-meta').textContent = '最近 4 周(每周平均)';
-  else if (period === 'month') $('fat-trend-meta').textContent = '最近 6 月(每月平均)';
-  else $('fat-trend-meta').textContent = today.getFullYear() + ' 年(每月平均)';
-
-  if (fatTrendChartInstance) fatTrendChartInstance.destroy();
-  fatTrendChartInstance = new Chart($('fat-trend-chart'), {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [
-        { label: '体脂率 %', data: bfs, borderColor: '#D85A30', backgroundColor: 'rgba(216,90,48,0.1)', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#D85A30', borderWidth: 2, spanGaps: true, fill: true }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : '无'); } } },
-      },
-      scales: { y: { beginAtZero: false } },
-    },
-  });
-}
-
-async function renderWeightChart() {
-  const period = getActivePeriod('weight');
-  const result = await sb.from('body_data').select('*').order('date', { ascending: true });
-  const agg = aggregateBody(result.data || [], period);
-  let labels = agg.labels;
-  let values;
-
-  if (period === 'day') {
-    values = agg.records.map(function(r) { return r.weight; });
-  } else {
-    values = agg.groups.map(function(g) {
-      const v = avg(g.map(function(r) { return r.weight; }));
-      return v != null ? parseFloat(v.toFixed(2)) : null;
-    });
-  }
-
-  const today = new Date();
-  if (period === 'day') $('weight-meta').textContent = '所有记录';
-  else if (period === 'week') $('weight-meta').textContent = '最近 4 周(每周平均)';
-  else if (period === 'month') $('weight-meta').textContent = '最近 6 月(每月平均)';
-  else $('weight-meta').textContent = today.getFullYear() + ' 年(每月平均)';
-
-  if (weightChartInstance) weightChartInstance.destroy();
-  weightChartInstance = new Chart($('weight-chart'), {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: '体重',
-        data: values,
-        borderColor: '#D85A30',
-        backgroundColor: '#FAECE7',
-        tension: 0.3,
-        pointRadius: 4,
-        pointBackgroundColor: '#D85A30',
-        fill: true,
-        borderWidth: 2,
-        spanGaps: true
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' kg' : '无数据'; } } },
-      },
-      scales: { y: { beginAtZero: false } },
-    },
-  });
-}
-
-async function renderWorkoutChart() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const result = await sb.from('workout_data').select('date, type').gte('date', year + '-01-01').lte('date', year + '-12-31');
-
-  // 去重：同一天同一类型只算一次
-  const uniq = new Set();
-  (result.data || []).forEach(function(r) { uniq.add(r.date + '|' + r.type); });
-
-  const monthTotal = Array(12).fill(0);
-  const monthAerobic = Array(12).fill(0);
-  const monthAnaerobic = Array(12).fill(0);
-
-  uniq.forEach(function(key) {
-    const parts = key.split('|');
-    const date = parts[0];
-    const type = parts[1];
-    const m = parseInt(date.split('-')[1]) - 1;
-    monthTotal[m]++;
-    if (type === '有氧') monthAerobic[m]++;
-    else if (type === '无氧') monthAnaerobic[m]++;
-  });
-
-  // 当月统计 pills
-  const curM = today.getMonth();
-  const statsEl = $('workout-monthly-stats');
-  statsEl.innerHTML =
-    '<div class="workout-stat-pill">本月运动<span>' + monthTotal[curM] + '</span> 次</div>' +
-    '<div class="workout-stat-pill aerobic-pill">有氧<span>' + monthAerobic[curM] + '</span> 次</div>' +
-    '<div class="workout-stat-pill anaerobic-pill">无氧<span>' + monthAnaerobic[curM] + '</span> 次</div>';
-
-  $('workout-title').textContent = '训练汇总(' + year + ' 年)';
-
-  if (workoutChartInstance) workoutChartInstance.destroy();
-  workoutChartInstance = new Chart($('workout-chart'), {
-    type: 'bar',
-    data: {
-      labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
-      datasets: [
-        { label: '有氧次数', data: monthAerobic, backgroundColor: '#F0997B', borderRadius: 4, stack: 'workout' },
-        { label: '无氧次数', data: monthAnaerobic, backgroundColor: '#D85A30', borderRadius: 4, stack: 'workout' }
-      ]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 12 } } },
-        tooltip: {
-          callbacks: {
-            afterBody: function(items) {
-              if (!items.length) return '';
-              const m = items[0].dataIndex;
-              return '合计: ' + monthTotal[m] + ' 次';
-            }
-          }
-        }
+        legend: { display: datasets.length > 1, position: 'bottom' },
+        tooltip: { callbacks: {
+          title: items => items.length ? new Date(items[0].parsed.x).toISOString().slice(0, 10) : '',
+          label: ctx => ctx.dataset.label + ': ' + format(ctx.parsed.y, 1) + ' ' + unit,
+          afterBody: items => key === 'weight' && items.length && datasets.length === 1 ? '当天实测：' + format(H.number(rows[items[0].dataIndex].weight), 1) + ' kg' : ''
+        } }
       },
       scales: {
-        x: { beginAtZero: true, ticks: { precision: 0 }, stacked: true },
-        y: { stacked: true }
+        x: { type: 'linear', ticks: { maxTicksLimit: 6, callback: value => new Date(value).toISOString().slice(0, 10) } },
+        y: { beginAtZero: false }
+      }
+    }
+  });
+}
+function chartMeta(id, range, rows, extra = '') {
+  $(id).textContent = H.RANGE_LABELS[range] + ' · ' + (rows.length ? rows.length + ' 条记录' : '暂无数据') + extra;
+}
+function renderWeightChart() {
+  const range = getActivePeriod('weight');
+  // Compute over the full history before filtering so the first visible point keeps its prior six days.
+  const rows = H.filterRange(H.movingWeight(bodyData), range, todayStr());
+  $('weight-meta').textContent = rows.length ? '浅色柱：每日实测 · 深色线：7日平均' : '所选时间段暂无记录';
+  const valid = rows.filter(row => H.number(row.weight) != null);
+  const first = valid[0], last = valid[valid.length - 1];
+  $('weight-actual').textContent = last ? format(H.number(last.weight), 1) + ' kg' : '—';
+  $('weight-actual-date').textContent = last ? last.date + ' 记录' : '';
+  $('weight-range-label').textContent = ({ '30d': '近30天变化', '3m': '近3个月变化', '6m': '近6个月变化', '1y': '近1年变化', all: '全部记录变化' })[range];
+  const change = valid.length > 1 ? Number((H.number(last.weight) - H.number(first.weight)).toFixed(1)) : null;
+  $('weight-range-change').textContent = change == null ? '—' : change === 0 ? '基本持平' : (change > 0 ? '↑ ' : '↓ ') + format(Math.abs(change), 1) + ' kg';
+  $('weight-range-comparison').textContent = valid.length > 1 ? format(H.number(first.weight), 1) + ' → ' + format(H.number(last.weight), 1) + ' kg（首末实测）' : '记录不足，暂不比较';
+  const values = valid.map(row => H.number(row.weight));
+  const min = values.length ? Math.floor((Math.min(...values) - 0.5) * 2) / 2 : 0;
+  const max = values.length ? Math.ceil((Math.max(...values) + 0.5) * 2) / 2 : 1;
+  const points = field => rows.map(row => ({ x: Date.parse(row.date + 'T00:00:00Z'), y: H.number(row[field]) }));
+  replaceChart('weight', 'weight-chart', {
+    type: 'bar',
+    data: { datasets: [
+      { type: 'line', label: '7日平均', data: points('weight7d'), borderColor: '#a73818', backgroundColor: '#a73818', borderWidth: 3, pointRadius: rows.length === 1 ? 4 : 0, pointHoverRadius: 5, tension: 0.15, fill: false, order: 0 },
+      { type: 'bar', label: '每日体重', data: points('weight'), backgroundColor: '#f3cbbb', hoverBackgroundColor: '#e9af96', borderWidth: 0, borderRadius: 3, maxBarThickness: 24, base: min, order: 1 }
+    ] },
+    plugins: [{
+      id: 'weightValues',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx, bars = chart.getDatasetMeta(1);
+        if (bars.hidden || !rows.length) return;
+        const showAll = rows.length <= Math.floor(chart.chartArea.width / 38);
+        ctx.save(); ctx.font = '11px sans-serif'; ctx.fillStyle = '#79574a'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        bars.data.forEach((bar, i) => {
+          if (H.number(rows[i].weight) != null && (showAll || i === rows.length - 1)) ctx.fillText(format(H.number(rows[i].weight), 1), bar.x, bar.y - 5);
+        });
+        ctx.restore();
+      }
+    }],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', reverse: true },
+        tooltip: { callbacks: {
+          title: items => items.length ? new Date(items[0].parsed.x).toISOString().slice(0, 10) : '',
+          label: ctx => ctx.dataset.label + '：' + format(ctx.parsed.y, 1) + ' kg'
+        } }
+      },
+      scales: {
+        x: { type: 'linear', offset: true, grid: { display: false }, ticks: { maxTicksLimit: 6, callback: value => new Date(value).toISOString().slice(5, 10).replace('-', '/') } },
+        y: { min, max, title: { display: true, text: '体重 kg（局部刻度）' }, ticks: { callback: value => Number(value).toFixed(1) } }
       }
     }
   });
 }
 
+function renderMuscleChart() {
+  const range = getActivePeriod('muscle');
+  const rows = H.filterRange(bodyData, range, todayStr()).map(row => ({ ...row, muscleRatio: H.ratio(row, 'muscle') }));
+  chartMeta('muscle-meta', range, rows.filter(row => row.muscleRatio != null));
+  lineChart('muscle', 'muscle-chart', rows, [{ label: '肌肉率', field: 'muscleRatio', borderColor: '#c5831d', backgroundColor: '#c5831d' }], '%');
+}
+function renderFatTrendChart() {
+  const range = getActivePeriod('fattend');
+  const rows = H.filterRange(bodyData, range, todayStr()).map(row => ({ ...row, fatRatio: H.ratio(row, 'fat') }));
+  chartMeta('fat-trend-meta', range, rows.filter(row => row.fatRatio != null));
+  lineChart('fat', 'fat-trend-chart', rows, [{ label: '体脂率', field: 'fatRatio', borderColor: '#D85A30', backgroundColor: '#D85A30' }], '%');
+}
+function renderWorkoutChart() {
+  const today = todayStr(), year = today.slice(0, 4);
+  const data = workoutData.filter(row => row.date <= today);
+  const months = Array.from({ length: 12 }, (_, i) => year + '-' + String(i + 1).padStart(2, '0'));
+  const stats = months.map(month => H.workoutMonth(data, month));
+  const current = stats[Number(today.slice(5, 7)) - 1];
+  $('workout-title').textContent = '训练汇总（' + year + '年）';
+  $('workout-monthly-stats').innerHTML = '<div class="workout-stat-pill">本月运动 <span>' + current.count + '</span> 次</div>' + current.types.map((item, i) => '<div class="workout-stat-pill ' + (i === 0 ? 'aerobic-pill' : 'anaerobic-pill') + '">' + item.type + ' <span>' + item.count + '</span> 次</div>').join('');
+  const types = ['有氧', '无氧'];
+  const colors = ['#F0997B', '#D85A30'];
+  replaceChart('workout', 'workout-chart', {
+    type: 'bar',
+    data: {
+      labels: months.map(month => month.slice(5) + '月'),
+      datasets: types.map((type, i) => ({ label: type + '次数', data: stats.map(stat => stat.types.find(item => item.type === type)?.count || 0), backgroundColor: colors[i % colors.length], borderRadius: 4 }))
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: {
+        afterBody: items => {
+          if (!items.length) return '';
+          const stat = stats[items[0].dataIndex];
+          return '合计：' + stat.count + ' 次';
+        }
+      } } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 }, stacked: true }, y: { stacked: true } }
+    }
+  });
+}
+function downloadCsv(name, headers, rows) {
+  if (!rows.length) return toast('暂无可导出的数据', 'info');
+  const url = URL.createObjectURL(new Blob([H.toCsv(headers, rows)], { type: 'text/csv;charset=utf-8;' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name + '-' + todayStr() + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('已导出 ' + rows.length + ' 条记录', 'success');
+}
+$('export-body').onclick = () => downloadCsv('身体数据', ['记录ID', '日期', '体重(kg)', '脂肪(kg)', '肌肉(kg)', '体脂率(%)'], bodyData.map(row => [row.id, row.date, row.weight, row.fat, row.muscle, H.ratio(row, 'fat') == null ? null : Number(H.ratio(row, 'fat').toFixed(2))]));
+$('export-workout').onclick = () => downloadCsv('运动数据', ['记录ID', '日期', '类型', '时长(分钟)', '内容'], workoutData.map(row => [row.id, row.date, row.type, row.duration, row.content]));
 init();
+
 </script>
 
 </body>
